@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Painel de Matrículas TCC — UNEAL Campus VI</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Georgia','Times New Roman',serif;background:#f0f4f8;color:#1a2a3a;min-height:100vh}
+  header{background:linear-gradient(135deg,#0d2d55 0%,#1a4789 100%);border-bottom:4px solid #c9a84c;padding:28px 32px 24px}
+  .header-inner{max-width:1100px;margin:0 auto;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px}
+  .header-badge{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+  .badge-icon{width:36px;height:36px;border-radius:8px;background:#c9a84c;display:flex;align-items:center;justify-content:center;font-size:18px}
+  .badge-text{color:#c9a84c;font-weight:700;letter-spacing:.08em;font-size:11px;text-transform:uppercase}
+  h1{color:#fff;font-size:24px;font-weight:700}
+  .header-sub{color:#a8c4e0;font-size:13px;margin-top:4px}
+  .header-date{background:rgba(255,255,255,.08);border-radius:10px;padding:10px 18px;border:1px solid rgba(255,255,255,.15);text-align:right}
+  .date-label{color:#a8c4e0;font-size:11px;text-transform:uppercase;letter-spacing:.06em}
+  .date-val{color:#fff;font-weight:700;font-size:14px;margin-top:2px}
+  main{max-width:1100px;margin:0 auto;padding:32px 32px 48px}
+  .filter-label{font-size:11px;font-weight:700;color:#5a7491;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px}
+  .filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:28px}
+  .btn-filter{padding:8px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;border:2px solid #d1dce8;background:#fff;color:#1a2a3a;transition:all .2s;font-family:inherit}
+  .btn-filter.active-adm{background:#1a4789;border-color:#1a4789;color:#fff;box-shadow:0 3px 12px #1a478944}
+  .btn-filter.active-dir{background:#4a7fc1;border-color:#4a7fc1;color:#fff;box-shadow:0 3px 12px #4a7fc144}
+  .btn-filter.active-fis{background:#7aaed6;border-color:#7aaed6;color:#fff;box-shadow:0 3px 12px #7aaed644}
+  .btn-filter.active-all{background:#0d2d55;border-color:#0d2d55;color:#fff;box-shadow:0 3px 12px #0d2d5544}
+  .cards{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:28px}
+  .card{background:#fff;border-radius:12px;padding:22px 28px;border:1px solid #d1dce8;box-shadow:0 2px 12px rgba(13,45,85,.07);display:flex;align-items:center;gap:18px;flex:1;min-width:180px}
+  .card-icon{width:52px;height:52px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0}
+  .card-label{font-size:12px;color:#5a7491;letter-spacing:.06em;text-transform:uppercase;font-weight:600}
+  .card-value{font-size:32px;font-weight:800;line-height:1;margin-top:2px}
+  .card-sub{font-size:12px;color:#5a7491;margin-top:4px}
+  .charts{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+  .chart-box{background:#fff;border-radius:14px;padding:28px 24px 20px;border:1px solid #d1dce8;box-shadow:0 2px 12px rgba(13,45,85,.07)}
+  .chart-title{font-size:16px;font-weight:700;color:#0d2d55}
+  .chart-sub{font-size:12px;color:#5a7491;margin-top:4px;margin-bottom:20px}
+  .chart-legend{display:flex;flex-direction:column;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid #d1dce8}
+  .legend-row{display:flex;align-items:center;justify-content:space-between}
+  .legend-left{display:flex;align-items:center;gap:8px}
+  .legend-dot{width:10px;height:10px;border-radius:50%}
+  .legend-name{font-size:12px;font-weight:600;color:#1a2a3a}
+  .legend-bar-wrap{height:6px;width:70px;border-radius:99px;background:#d1dce8;overflow:hidden}
+  .legend-bar{height:100%;border-radius:99px}
+  .legend-pct{font-size:12px;font-weight:800;min-width:28px;text-align:right}
+  .bar-legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;padding-top:14px;border-top:1px solid #d1dce8}
+  .bar-leg-item{display:flex;align-items:center;gap:6px}
+  .bar-leg-sq{width:10px;height:10px;border-radius:3px}
+  .bar-leg-txt{font-size:11px;color:#5a7491;font-weight:600}
+  .student-section{background:#fff;border-radius:14px;border:1px solid #d1dce8;box-shadow:0 2px 12px rgba(13,45,85,.07);overflow:hidden;margin-top:24px}
+  .student-header{padding:20px 28px 16px;border-bottom:1px solid #d1dce8;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+  .student-title{font-size:16px;font-weight:700;color:#0d2d55}
+  .student-prof{font-size:12px;color:#5a7491;margin-top:4px}
+  input[type=text]{padding:8px 14px;border-radius:8px;border:1.5px solid #d1dce8;font-size:13px;color:#1a2a3a;outline:none;font-family:inherit;width:240px}
+  input[type=text]:focus{border-color:#1a4789}
+  .student-list{padding:8px 0}
+  .student-row{display:flex;align-items:center;gap:14px;padding:10px 28px;border-bottom:1px solid #d1dce8}
+  .student-row:nth-child(odd){background:#fff}
+  .student-row:nth-child(even){background:#fafcff}
+  .student-num{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px;font-weight:800}
+  .student-name{font-size:13px;font-weight:500;color:#1a2a3a;flex:1}
+  .student-tag{font-size:11px;font-weight:700;padding:2px 10px;border-radius:20px}
+  .student-footer{padding:10px 28px;background:#f5f8fc;border-top:1px solid #d1dce8;font-size:11px;color:#5a7491;font-weight:600}
+  .no-result{text-align:center;color:#5a7491;padding:20px 0;font-size:13px}
+  footer{margin-top:32px;text-align:center;font-size:11px;color:#a0b4c8;letter-spacing:.05em}
+  @media(max-width:700px){
+    .charts{grid-template-columns:1fr}
+    main{padding:20px 16px 40px}
+    header{padding:20px 16px 18px}
+    .cards{flex-direction:column}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div>
+      <div class="header-badge">
+        <div class="badge-icon">🎓</div>
+        <span class="badge-text">UNEAL · Campus VI</span>
+      </div>
+      <h1>Painel de Matrículas — TCC</h1>
+      <p class="header-sub">Período Letivo 2026/1 · Disciplinas de Trabalho de Conclusão de Curso</p>
+    </div>
+    <div class="header-date">
+      <div class="date-label">Atualizado em</div>
+      <div class="date-val">Abril · 2026</div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <p class="filter-label">Filtrar por Curso</p>
+  <div class="filters" id="filters"></div>
+  <div class="cards" id="cards"></div>
+  <div class="charts">
+    <div class="chart-box">
+      <div class="chart-title">Alunos por Disciplina</div>
+      <div class="chart-sub">Quantidade matriculada em cada TCC · 2026/1</div>
+      <div style="position:relative;height:240px"><canvas id="barChart"></canvas></div>
+      <div class="bar-legend" id="barLegend"></div>
+    </div>
+    <div class="chart-box">
+      <div class="chart-title">Proporção por Curso</div>
+      <div class="chart-sub">Participação relativa de cada curso no período</div>
+      <div style="position:relative;height:220px"><canvas id="pieChart"></canvas></div>
+      <div class="chart-legend" id="pieLegend"></div>
+    </div>
+  </div>
+  <div id="studentSection"></div>
+  <footer>UNEAL · Campus VI · Gestão Acadêmica 2026/1</footer>
+</main>
+
+<script>
+const COLORS = { adm:"#1a4789", dir:"#4a7fc1", fis:"#7aaed6", header:"#0d2d55" };
+const DATA = [
+  {
+    curso:"Administração Pública", disciplina:"Trabalho de Curso II",
+    turno:"Noturno", sigla:"ADM", color: COLORS.adm,
+    professor:"ANA LYDIA VASCO DE ALBUQUERQUE PEIXOTO",
+    alunos:["ALAN GLEITON BARBOSA DE LIRA","ALAN RAMOS DO NASCIMENTO","ALICE CRISTINA MORAES LEITE",
+      "ANA BEATRIZ GOULART DE ALBUQUERQUE","BRUNO DOS SANTOS VERISSIMO","CARLOS LACERDA MARTINS TAVARES",
+      "DAYSELANE NASCIMENTO OLIVEIRA DA SILVA","DEBORA TAYNA DOS SANTOS FERREIRA","DIANE DA PAZ COSTA",
+      "EDUARDO BRITO SANTOS ROCHA","EVERTON DA SILVA MONTEIRO","FELIPE VIEIRA MARINHO FERREIRA",
+      "FLAVIO HENRIQUE REIS SANTOS","GRAZIELLY CRISTINA DA SILVA","HENDERSON ROGERS MELO DA SILVA",
+      "ISABELLE NASCIMENTO AZEVEDO","ISLANILTON PEREIRA JACINTO","JAIR HELENO DA SILVA JUNIOR",
+      "JOAO PEDRO CAMPELO DUQUE DE MORAES","JOAO QUINTELA CAVALCANTE NETO","JOAO VICTOR ZIMPEL NOVAES",
+      "JOELMA CAMILO CORDEIRO","JONAS TADEU FARIAS MACENA","JULIANNA VALENTINO SILVA",
+      "LIVIA LISBOA SANDES SILVA","LUCAS LEONCIO MENDONCA DE FRANCA","LUCAS LOPES DE LIRA",
+      "LUIZA CRISTINA PACHECO GALVAO","MARCIO ANTONIO DA SILVA COSTA","MARIA CRISTIANA DA SILVA SANTOS",
+      "MARINA BEATRIZ DE LIMA OLIVEIRA DA SILVA","MARQUIANY KAROLINY SILVA SANTOS",
+      "MATHEUS BARROS PINHEIRO DE LIMA","MICHELE BULHOES DE MENDONCA","MYRELLE MARIA SANTIAGO DOS SANTOS",
+      "PAULA FRANCIANY GOMES DE AMORIM","PEDRO CICERO FERNANDES NETO","RAFAELA SANTOS DE OLIVEIRA",
+      "RODRIGO MOREIRA DA SILVA","RONIELYSON JOSE DA SILVA VIEIRA","SERGIO ANDRE PEREIRA SANTANA",
+      "SIRLANIO JOSE DA SILVA","THALLES TEODOSIO PINHEIRO","VANISE FERREIRA COSTA"]
+  },
+  {
+    curso:"Direito", disciplina:"TCC II", turno:"Noturno", sigla:"DIR", color: COLORS.dir,
+    professor:"Variado",
+    alunos:["JEAN TENORIO MENEZES","JOÃO VICTOR SILVA SANTOS","PEDRO YGOR CAFE PAES LIRA"]
+  },
+  {
+    curso:"Física", disciplina:"TCC", turno:"Vespertino", sigla:"FIS", color: COLORS.fis,
+    professor:"GIDELSON FERRO DA SILVA",
+    alunos:["ANTONIO DAVID FERREIRA CAVALCANTE","CELIO DA SILVA CARIOLANDO","ENRIQUE JOSE MACEDO BEDER",
+      "HILARIO SAULO TEIXEIRA","JOAO ANDRE GOES FERREIRA BARBOSA","JOAO DAVID COSTA SILVA",
+      "VANESSA CAVALCANTE DE LIMA"]
+  }
+];
+
+const TOTAL = DATA.reduce((s,d)=>s+d.alunos.length,0);
+let selected = "Todos";
+let barChart, pieChart;
+
+function toTitle(s){ return s.toLowerCase().replace(/\b\w/g,c=>c.toUpperCase()); }
+function hex18(h){ return h+"18"; }
+
+// --- Filtros ---
+function renderFilters(){
+  const el = document.getElementById("filters");
+  el.innerHTML="";
+  ["Todos",...DATA.map(d=>d.curso)].forEach(c=>{
+    const b = document.createElement("button");
+    b.className="btn-filter";
+    b.textContent=c;
+    const cls = c==="Todos"?"all": c==="Administração Pública"?"adm": c==="Direito"?"dir":"fis";
+    if(selected===c) b.classList.add("active-"+cls);
+    b.onclick=()=>{ selected=c; render(); };
+    el.appendChild(b);
+  });
+}
+
+// --- Cards ---
+function renderCards(){
+  const el=document.getElementById("cards"); el.innerHTML="";
+  const filtered = selected==="Todos"?DATA:DATA.filter(d=>d.curso===selected);
+  const total = filtered.reduce((s,d)=>s+d.alunos.length,0);
+  const cards=[
+    {label:"Total de Alunos Geral",value:TOTAL,sub:"todos os cursos",color:COLORS.adm,icon:"📊"}
+  ];
+  if(selected!=="Todos"){
+    cards.push({label:`Alunos — ${selected}`,value:total,sub:filtered[0]?.disciplina,color:filtered[0]?.color,icon:"📋"});
+  } else {
+    cards.push({label:"Cursos Ativos",value:DATA.length,sub:"com matrículas em TCC",color:COLORS.fis,icon:"🏛️"});
+    cards.push({label:"Maior Turma",value:44,sub:"Administração Pública",color:"#c9a84c",icon:"🏆"});
+  }
+  cards.forEach(c=>{
+    el.innerHTML+=`<div class="card">
+      <div class="card-icon" style="background:${c.color}18">${c.icon}</div>
+      <div>
+        <div class="card-label">${c.label}</div>
+        <div class="card-value" style="color:${c.color}">${c.value}</div>
+        ${c.sub?`<div class="card-sub">${c.sub}</div>`:""}
+      </div>
+    </div>`;
+  });
+}
+
+// --- Gráficos ---
+function renderCharts(){
+  const filtered = selected==="Todos"?DATA:DATA.filter(d=>d.curso===selected);
+
+  // Bar
+  if(barChart) barChart.destroy();
+  const bCtx=document.getElementById("barChart").getContext("2d");
+  barChart=new Chart(bCtx,{
+    type:"bar",
+    data:{
+      labels:filtered.map(d=>d.sigla),
+      datasets:[{
+        data:filtered.map(d=>d.alunos.length),
+        backgroundColor:filtered.map(d=>d.color),
+        borderRadius:8, borderSkipped:false, maxBarThickness:72
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{
+        callbacks:{
+          title:([i])=>filtered[i.dataIndex].curso,
+          label:i=>`${i.raw} alunos`
+        }
+      },
+      datalabels:{display:false}
+      },
+      scales:{
+        x:{grid:{display:false},ticks:{color:"#5a7491",font:{weight:"600",size:12}}},
+        y:{grid:{color:"#e4ecf5"},ticks:{color:"#5a7491",font:{size:11}},border:{display:false}}
+      }
+    }
+  });
+
+  // Bar legend
+  const bl=document.getElementById("barLegend"); bl.innerHTML="";
+  filtered.forEach(d=>{
+    bl.innerHTML+=`<div class="bar-leg-item"><div class="bar-leg-sq" style="background:${d.color}"></div><span class="bar-leg-txt">${d.sigla} — ${d.curso}</span></div>`;
+  });
+
+  // Pie
+  if(pieChart) pieChart.destroy();
+  const pCtx=document.getElementById("pieChart").getContext("2d");
+  pieChart=new Chart(pCtx,{
+    type:"doughnut",
+    data:{
+      labels:filtered.map(d=>d.curso),
+      datasets:[{
+        data:filtered.map(d=>d.alunos.length),
+        backgroundColor:filtered.map(d=>d.color),
+        borderWidth:0, hoverOffset:6
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false, cutout:"52%",
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{label:i=>`${i.label}: ${i.raw} alunos (${((i.raw/TOTAL)*100).toFixed(1)}%)`}}
+      }
+    }
+  });
+
+  // Pie legend
+  const pl=document.getElementById("pieLegend"); pl.innerHTML="";
+  filtered.forEach(d=>{
+    const pct=((d.alunos.length/TOTAL)*100).toFixed(0);
+    pl.innerHTML+=`<div class="legend-row">
+      <div class="legend-left">
+        <div class="legend-dot" style="background:${d.color}"></div>
+        <span class="legend-name">${d.curso}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="legend-bar-wrap"><div class="legend-bar" style="width:${(d.alunos.length/TOTAL)*100}%;background:${d.color}"></div></div>
+        <span class="legend-pct" style="color:${d.color}">${pct}%</span>
+      </div>
+    </div>`;
+  });
+}
+
+// --- Lista de Alunos ---
+let searchVal="";
+function renderStudents(){
+  const el=document.getElementById("studentSection");
+  const filtered=selected==="Todos"?DATA:DATA.filter(d=>d.curso===selected);
+
+  const allStudents = selected==="Todos"
+    ? DATA.flatMap(d=>d.alunos.map(n=>({nome:n,curso:d.curso,sigla:d.sigla,color:d.color})))
+    : filtered[0].alunos.map(n=>({nome:n,curso:filtered[0].curso,sigla:filtered[0].sigla,color:filtered[0].color}));
+
+  const fAlunos = allStudents.filter(a=>a.nome.toLowerCase().includes(searchVal.toLowerCase())||a.curso.toLowerCase().includes(searchVal.toLowerCase()));
+
+  const titleTxt = selected==="Todos"?"Todos os Alunos Matriculados":`Lista de Alunos — ${selected}`;
+  const subTxt = selected==="Todos"
+    ? "Lista consolidada de todos os cursos · TCC 2026/1"
+    : `${filtered[0].disciplina} · ${filtered[0].turno} · Prof.: ${filtered[0].professor}`;
+  const placeholder = selected==="Todos"?"🔍 Buscar por nome ou curso...":"🔍 Buscar aluno...";
+
+  el.innerHTML=`<div class="student-section">
+    <div class="student-header">
+      <div>
+        <div class="student-title">${titleTxt}</div>
+        <div class="student-prof">${subTxt}</div>
+      </div>
+      <input type="text" id="searchInput" placeholder="${placeholder}" value="${searchVal}"/>
+    </div>
+    <div class="student-list" id="studentList"></div>
+    <div class="student-footer" id="studentCount"></div>
+  </div>`;
+
+  document.getElementById("searchInput").addEventListener("input",e=>{
+    searchVal=e.target.value; renderStudents();
+  });
+
+  const listEl=document.getElementById("studentList");
+  if(fAlunos.length===0){
+    listEl.innerHTML=`<div class="no-result">Nenhum aluno encontrado.</div>`;
+  } else {
+    fAlunos.forEach((a,i)=>{
+      const div=document.createElement("div");
+      div.className="student-row";
+      div.innerHTML=`
+        <div class="student-num" style="background:${a.color}18;color:${a.color}">${i+1}</div>
+        <span class="student-name">${toTitle(a.nome)}</span>
+        ${selected==="Todos"?`<span class="student-tag" style="background:${a.color}18;color:${a.color}">${a.sigla}</span>`:""}
+      `;
+      listEl.appendChild(div);
+    });
+  }
+  document.getElementById("studentCount").textContent=`${fAlunos.length} de ${allStudents.length} aluno${allStudents.length!==1?"s":""}`;
+}
+
+function render(){
+  searchVal="";
+  renderFilters();
+  renderCards();
+  renderCharts();
+  renderStudents();
+}
+
+render();
+</script>
+</body>
+</html>
