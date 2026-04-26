@@ -155,6 +155,7 @@ let selected = "Todos";
 let barChart, pieChart;
 
 function toTitle(s){ return s.toLowerCase().replace(/\b\w/g,c=>c.toUpperCase()); }
+function normalize(s){ return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,""); }
 function hex18(h){ return h+"18"; }
 
 // --- Filtros ---
@@ -227,7 +228,7 @@ function renderCharts(){
       },
       scales:{
         x:{grid:{display:false},ticks:{color:"#5a7491",font:{weight:"600",size:12}}},
-        y:{grid:{color:"#e4ecf5"},ticks:{color:"#5a7491",font:{size:11}},border:{display:false}}
+        y:{grid:{color:"#e4ecf5"},ticks:{color:"#5a7491",font:{size:11}},border:{display:false},min:0,max:TOTAL}
       }
     }
   });
@@ -239,15 +240,19 @@ function renderCharts(){
   });
 
   // Pie
+  const outros = TOTAL - filtered.reduce((s,d)=>s+d.alunos.length,0);
+  const pieData = filtered.map(d=>({name:d.curso,value:d.alunos.length,color:d.color}));
+  if(outros>0) pieData.push({name:"Outros cursos",value:outros,color:"#d1dce8"});
+
   if(pieChart) pieChart.destroy();
   const pCtx=document.getElementById("pieChart").getContext("2d");
   pieChart=new Chart(pCtx,{
     type:"doughnut",
     data:{
-      labels:filtered.map(d=>d.curso),
+      labels:pieData.map(d=>d.name),
       datasets:[{
-        data:filtered.map(d=>d.alunos.length),
-        backgroundColor:filtered.map(d=>d.color),
+        data:pieData.map(d=>d.value),
+        backgroundColor:pieData.map(d=>d.color),
         borderWidth:0, hoverOffset:6
       }]
     },
@@ -260,7 +265,6 @@ function renderCharts(){
     }
   });
 
-  // Pie legend
   const pl=document.getElementById("pieLegend"); pl.innerHTML="";
   filtered.forEach(d=>{
     const pct=((d.alunos.length/TOTAL)*100).toFixed(0);
@@ -275,43 +279,35 @@ function renderCharts(){
       </div>
     </div>`;
   });
+  if(outros>0){
+    const pct=((outros/TOTAL)*100).toFixed(0);
+    pl.innerHTML+=`<div class="legend-row">
+      <div class="legend-left">
+        <div class="legend-dot" style="background:#d1dce8"></div>
+        <span class="legend-name" style="color:#5a7491">Outros cursos</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="legend-bar-wrap"><div class="legend-bar" style="width:${(outros/TOTAL)*100}%;background:#d1dce8"></div></div>
+        <span class="legend-pct" style="color:#5a7491">${pct}%</span>
+      </div>
+    </div>`;
+  }
 }
 
 // --- Lista de Alunos ---
 let searchVal="";
-function renderStudents(){
-  const el=document.getElementById("studentSection");
+function renderStudentList(){
   const filtered=selected==="Todos"?DATA:DATA.filter(d=>d.curso===selected);
-
-  const allStudents = selected==="Todos"
+  const allStudents=selected==="Todos"
     ? DATA.flatMap(d=>d.alunos.map(n=>({nome:n,curso:d.curso,sigla:d.sigla,color:d.color})))
     : filtered[0].alunos.map(n=>({nome:n,curso:filtered[0].curso,sigla:filtered[0].sigla,color:filtered[0].color}));
-
-  const fAlunos = allStudents.filter(a=>a.nome.toLowerCase().includes(searchVal.toLowerCase())||a.curso.toLowerCase().includes(searchVal.toLowerCase()));
-
-  const titleTxt = selected==="Todos"?"Todos os Alunos Matriculados":`Lista de Alunos — ${selected}`;
-  const subTxt = selected==="Todos"
-    ? "Lista consolidada de todos os cursos · TCC 2026/1"
-    : `${filtered[0].disciplina} · ${filtered[0].turno} · Prof.: ${filtered[0].professor}`;
-  const placeholder = selected==="Todos"?"🔍 Buscar por nome ou curso...":"🔍 Buscar aluno...";
-
-  el.innerHTML=`<div class="student-section">
-    <div class="student-header">
-      <div>
-        <div class="student-title">${titleTxt}</div>
-        <div class="student-prof">${subTxt}</div>
-      </div>
-      <input type="text" id="searchInput" placeholder="${placeholder}" value="${searchVal}"/>
-    </div>
-    <div class="student-list" id="studentList"></div>
-    <div class="student-footer" id="studentCount"></div>
-  </div>`;
-
-  document.getElementById("searchInput").addEventListener("input",e=>{
-    searchVal=e.target.value; renderStudents();
-  });
-
+  const q=normalize(searchVal);
+  const fAlunos=allStudents.filter(a=>
+    normalize(a.nome).includes(q)||
+    normalize(a.curso).includes(q)
+  );
   const listEl=document.getElementById("studentList");
+  listEl.innerHTML="";
   if(fAlunos.length===0){
     listEl.innerHTML=`<div class="no-result">Nenhum aluno encontrado.</div>`;
   } else {
@@ -327,6 +323,35 @@ function renderStudents(){
     });
   }
   document.getElementById("studentCount").textContent=`${fAlunos.length} de ${allStudents.length} aluno${allStudents.length!==1?"s":""}`;
+}
+
+function renderStudents(){
+  const el=document.getElementById("studentSection");
+  const filtered=selected==="Todos"?DATA:DATA.filter(d=>d.curso===selected);
+  const titleTxt=selected==="Todos"?"Todos os Alunos Matriculados":`Lista de Alunos — ${selected}`;
+  const subTxt=selected==="Todos"
+    ? "Lista consolidada de todos os cursos · TCC 2026/1"
+    : `${filtered[0].disciplina} · ${filtered[0].turno} · Prof.: ${filtered[0].professor}`;
+  const placeholder=selected==="Todos"?"🔍 Buscar por nome ou curso...":"🔍 Buscar aluno...";
+
+  el.innerHTML=`<div class="student-section">
+    <div class="student-header">
+      <div>
+        <div class="student-title">${titleTxt}</div>
+        <div class="student-prof">${subTxt}</div>
+      </div>
+      <input type="text" id="searchInput" placeholder="${placeholder}"/>
+    </div>
+    <div class="student-list" id="studentList"></div>
+    <div class="student-footer" id="studentCount"></div>
+  </div>`;
+
+  document.getElementById("searchInput").addEventListener("input",e=>{
+    searchVal=e.target.value;
+    renderStudentList();
+  });
+
+  renderStudentList();
 }
 
 function render(){
